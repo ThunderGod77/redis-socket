@@ -14,25 +14,46 @@
         var userid = params.get('userid')
         socket.emit('register', userid)
         socket.on("receive-message", (msg, senderId) => {
-
             console.log(`${msg} sent by ${senderId}`)
+            const node = document.createElement("li");
+            const textnode = document.createTextNode(`${msg} sent by ${senderId}`);
+            node.appendChild(textnode);
+            document.getElementById("inbox").appendChild(node);
         })
     </script>
+    <style>
+        .column {
+            float: left;
+            width: 50%;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Welcome <%= userid %>!</h1>
-    <br>
-    <label for="message">Msg</label>
-    &nbsp;
-    <input type="text" name="message" id="message" placeholder="message">
-    <br>
-    <br>
-    <label for="receiver">Receiver</label>
-    <input type="text" name="receiver" id="receiver" placeholder="receiver">
-    <br>
-    <br>
-    <button id="send">Send</button>
+    <div class="column">
+        <h1>Welcome <%= userid %>!</h1>
+        <br>
+        <label for="message">Msg</label>
+        &nbsp;
+        <input type="text" name="message" id="message" placeholder="message">
+        <br>
+        <br>
+        <label for="receiver">Receiver</label>
+        <input type="text" name="receiver" id="receiver" placeholder="receiver">
+        <br>
+        <br>
+        <button id="send">Send</button>
+    </div>
+    <div class="column">
+        <h1>Our Messages:</h1>
+        <br>
+
+        <br>
+        <ul id="inbox">
+
+        </ul>
+    </div>
+
     <script>
         document.getElementById("send").onclick = function () { myFunction() };
 

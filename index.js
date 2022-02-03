@@ -23,9 +23,30 @@ const port = process.env.PORT
 
 
 app.set('view engine', 'ejs');
+app.use(express.json());
 app.get('/', (req, res) => {
     res.render("test")
 });
+
+app.post("/notify", async(req, res) => {
+    let { receiverId, msg } = req.body
+    let data = {
+        msg, senderId: "notification from system", receiverId
+    }
+    if (receiverId === "") {
+        return res.status(400).json({err:new Error("receiverId is not valid")})
+    }else{
+        try {
+            await publisher.publish("chat", JSON.stringify(data))
+
+        } catch (err) {
+            console.log(err)
+            return res.status(500).json({err})
+        }
+        return res.status(200).json({msg:"successfully published the message!"})
+    }
+
+})
 
 
 app.get("/socket", (req, res) => {
@@ -55,21 +76,21 @@ io.on('connection', (socket) => {
 
         if (webSocketConnectionsByUserID[`${receiverId}`]) {
             let receiverSocketId = (webSocketConnectionsByUserID[receiverId]).socketid
-            
+
             socket.to(receiverSocketId).emit("receive-message", msg, senderId)
-            
+
         } else {
             let data = {
                 msg, senderId, receiverId
             }
-           
+
             try {
                 await publisher.publish("chat", JSON.stringify(data))
 
             } catch (err) {
                 console.log(err)
             }
-            
+
 
         }
     })
@@ -84,21 +105,27 @@ io.on('connection', (socket) => {
 
 });
 
-Promise.all([subscriber.connect(), publisher.connect()]).then(async() => {
+Promise.all([subscriber.connect(), publisher.connect()]).then(async () => {
     server.listen(port, async () => {
         console.log(`listening on localhost:${port}`);
     });
     await subscriber.subscribe('chat', (message) => {
         const obj = JSON.parse(message);
-        if(webSocketConnectionsByUserID[obj.receiverId]){
-            let sid = (webSocketConnectionsByUserID[obj.receiverId]).socketid
-            let socket = (webSocketConnectionsByUserID[obj.receiverId]).socket
-            socket.to(sid).emit("receive-message", obj.msg, senderId)
+        console.log(obj)
+        if (webSocketConnectionsByUserID[`${obj.receiverId}`]) {
 
+            let sid = (webSocketConnectionsByUserID[`${obj.receiverId}`]).socketid
+            let socket = (webSocketConnectionsByUserID[`${obj.receiverId}`]).socket
+
+
+            socket.emit("receive-message", obj.msg, obj.senderId)
+
+        } else {
+            console.log(`user with ${obj.receiverId} is not present`)
         }
-        
-      });
-      
-    
+
+    });
+
+
 
 });
