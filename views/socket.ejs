@@ -10,6 +10,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         var socket = io();
+        var error = false
         const params = new URLSearchParams(window.location.search)
         var userid = params.get('userid')
         socket.emit('register', userid)
@@ -19,6 +20,10 @@
             const textnode = document.createTextNode(`${msg} sent by ${senderId}`);
             node.appendChild(textnode);
             document.getElementById("inbox").appendChild(node);
+        })
+        socket.on("receive-error", () => {
+            error = true
+            document.getElementById("inboxHeading").innerHTML = "User is already connected";
         })
     </script>
     <style>
@@ -45,7 +50,7 @@
         <button id="send">Send</button>
     </div>
     <div class="column">
-        <h1>Our Messages:</h1>
+        <h1 id="inboxHeading">Our Messages:</h1>
         <br>
 
         <br>
@@ -58,6 +63,9 @@
         document.getElementById("send").onclick = function () { myFunction() };
 
         function myFunction() {
+            if(error){
+                alert("Error:user is already connected!")
+            }
             let receiverId = document.getElementById("receiver").value
             let msg = document.getElementById("message").value
             console.log(receiverId)

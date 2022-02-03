@@ -28,14 +28,17 @@ app.get('/', (req, res) => {
     res.render("test")
 });
 
+//lets system notify the user
 app.post("/notify", async(req, res) => {
     let { receiverId, msg } = req.body
-    let data = {
-        msg, senderId: "notification from system", receiverId
-    }
+    
     if (receiverId === "") {
         return res.status(400).json({err:new Error("receiverId is not valid")})
     }else{
+        let data = {
+            msg, senderId: "notification from system", receiverId
+        }
+        //publishes the message to redis
         try {
             await publisher.publish("chat", JSON.stringify(data))
 
@@ -48,7 +51,7 @@ app.post("/notify", async(req, res) => {
 
 })
 
-
+//actual page with socket.io connection
 app.get("/socket", (req, res) => {
     let userid = req.query.userid
     res.render("socket", { userid })
@@ -61,11 +64,14 @@ app.get("/socket", (req, res) => {
 
 io.on('connection', (socket) => {
 
+    //to register the client on backend
     socket.on('register', (userid) => {
         if (webSocketConnectionsByUserID[`${userid}`]) {
             console.log(`user ${userid} is already connected!`)
+            socket.emit("receive-error")
         } else {
             webSocketConnectionsByUserID[`${userid}`] = { socketid: socket.id, socket: socket }
+            //allows us to remove user by socket id when user disconnects
             webSocketConnectionsBySocketID[`${socket.id}`] = userid
 
             console.log(`${userid} has joined!`)
@@ -73,7 +79,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('message', async (msg, senderId, receiverId) => {
-
+        //checks if receiver belongs to the server...if not publishes the message to redis
         if (webSocketConnectionsByUserID[`${receiverId}`]) {
             let receiverSocketId = (webSocketConnectionsByUserID[receiverId]).socketid
 
@@ -112,9 +118,10 @@ Promise.all([subscriber.connect(), publisher.connect()]).then(async () => {
     await subscriber.subscribe('chat', (message) => {
         const obj = JSON.parse(message);
         console.log(obj)
+        //checks if receiver exists on this server
         if (webSocketConnectionsByUserID[`${obj.receiverId}`]) {
 
-            let sid = (webSocketConnectionsByUserID[`${obj.receiverId}`]).socketid
+            
             let socket = (webSocketConnectionsByUserID[`${obj.receiverId}`]).socket
 
 
