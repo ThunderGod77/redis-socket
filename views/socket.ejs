@@ -14,7 +14,7 @@
         var userid = params.get('userid')
         socket.emit('register', userid)
         socket.on("receive-message", (msg, senderId) => {
-            
+
             console.log(`${msg} sent by ${senderId}`)
         })
     </script>
@@ -40,7 +40,7 @@
             let receiverId = document.getElementById("receiver").value
             let msg = document.getElementById("message").value
             console.log(receiverId)
-            socket.emit("message", msg,userid, receiverId)
+            socket.emit("message", msg, userid, receiverId)
         }
     </script>
 </body>
